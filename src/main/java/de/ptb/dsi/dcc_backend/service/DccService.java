@@ -11,4 +11,6 @@ public interface DccService {
     Dcc getDccByPid(String pid);
     Boolean isDccValid(String pid);
     Dcc saveDcc(Dcc dcc);
+    String getBase64XmlByPid(String pid);
+
 }

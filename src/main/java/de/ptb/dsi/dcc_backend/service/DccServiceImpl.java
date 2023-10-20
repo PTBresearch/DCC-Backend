@@ -3,7 +3,6 @@ package de.ptb.dsi.dcc_backend.service;
 import de.ptb.dsi.dcc_backend.repository.DccRepository;
 import de.ptb.dsi.dcc_backend.model.Dcc;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -35,10 +34,12 @@ public class DccServiceImpl implements DccService{
         return dccRepository.save(dcc);
     }
 
-//    @Override
-//    public String isDccValidate(String pid) {
-//        return dccRepository.findDccByPidOrderByDccValid(pid);
-//    }
+    @Override
+    public String getBase64XmlByPid(String pid) {
+        if(dccRepository.existsDccByPid(pid))
+        return dccRepository.findDccByPid(pid).getXmlBase64();
+        else return "pid not exist";
+    }
 
 
 }

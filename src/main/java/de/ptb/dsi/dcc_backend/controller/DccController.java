@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "D-Constant-Api", description = " management API")
+@Tag(name = "DCC Backend Api", description = " management API")
 
 @OpenAPIDefinition(servers = {
         @Server(url = "http://localhost:8080", description = "local system")
@@ -32,9 +32,13 @@ public class DccController {
         return dccService.getDccList();
     }
 
-    @GetMapping(value = "/dcc/{pid}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/dccList/{pid}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Dcc> getDccByPid(@PathVariable String pid) {
         return  new ResponseEntity<>(dccService.getDccByPid(pid), HttpStatus.OK);
+    }
+    @GetMapping(value = "/dcc/{pid}")
+    public ResponseEntity<String> getXmlBase64ByPid(@PathVariable String pid) {
+        return  new ResponseEntity<>("xmlBase64: "+ dccService.getBase64XmlByPid(pid), HttpStatus.OK);
     }
 
     @GetMapping(value = "dccValidation/{pid}", produces = {MediaType.APPLICATION_JSON_VALUE})
