@@ -13,13 +13,16 @@ public interface DccService {
     List<Dcc> getDccList();
     Dcc getDccByPid(String pid);
     Boolean isDccValid(String pid);
-    Dcc saveDcc(Dcc dcc);
+    String saveDcc(Dcc dcc);
     String getBase64XmlByPid(String pid);
     List<String> getListDccPid();
 //    String searchRefType(String refType ) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException;
     String findNodeByRefType(String pid ,String attributeValue) throws ParserConfigurationException, IOException, SAXException, TransformerException;
 //    String convertDocumentToString(Document document) throws TransformerException;
     String nodeToString(Node node) throws TransformerException;
-
+    boolean  saveIfNotExist (Dcc dcc);
+    boolean findIfPidExist(Dcc dcc);
+    boolean existsDccByPid(String pid);
+    List<String> getListPid();
 
 }

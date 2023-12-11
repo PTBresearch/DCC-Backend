@@ -10,7 +10,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,6 +38,7 @@ public class DccServiceImpl implements DccService {
 
     @Override
     public Dcc getDccByPid(String pid) {
+
         return dccRepository.findDccByPid(pid);
     }
 
@@ -49,16 +49,16 @@ public class DccServiceImpl implements DccService {
     }
 
     @Override
-    public Dcc saveDcc(Dcc dcc) {
-        return dccRepository.save(dcc);
+    public String saveDcc(Dcc dcc) {
+        if(dccRepository.existsDccByPid(dcc.getPid()))
+        {return "pid already exist";}
+        else dccRepository.save(dcc);
+        return "dcc created";
     }
 
     @Override
     public String getBase64XmlByPid(String pid) {
         String base64 = dccRepository.findDccByPid(pid).getXmlBase64();
-//        String base64 = String.valueOf(Base64.decodeBase64((xml)));
-//        String base6 =new String(DatatypeConverter.parseBase64Binary(base64));
-//        String base6 =String.valueOf(DatatypeConverter.parseByte(base64));
 
         if (dccRepository.existsDccByPid(pid)) {
             System.out.println("base64: " + base64);
@@ -70,7 +70,14 @@ public class DccServiceImpl implements DccService {
     public List<String> getListDccPid() {
         List<Dcc> dccList = dccRepository.findAll();
         List<String> pidList = dccList.stream()
-                .map(pid -> "https://d-si.ptb.de/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+        return pidList;
+    }
+    @Override
+    public List<String> getListPid() {
+        List<Dcc> dccList = dccRepository.findAll();
+        List<String> pidList = dccList.stream()
+                .map(pid ->  pid.getPid()).collect(Collectors.toList());
         return pidList;
     }
 
@@ -91,8 +98,7 @@ public class DccServiceImpl implements DccService {
             NodeList nodeList = document.getElementsByTagName("*");
             for (int i = 0; i < nodeList.getLength(); i++) {
                 Node node = nodeList.item(i);
-                if (node instanceof Element) {
-                    Element element = (Element) node;
+                if (node instanceof Element element) {
                     //check if the element has the desired attribute with the desired value
                     if (element.hasAttribute("refType") && element.getAttribute("refType").equals(attributeValue)) {
                         //convert the found element to a string, including its children and attributes
@@ -105,7 +111,6 @@ public class DccServiceImpl implements DccService {
             return " refType  not exist";
         } else
             return "pid not exist";
-
     }
 
     @Override
@@ -115,8 +120,24 @@ public class DccServiceImpl implements DccService {
         transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
         StringWriter writer = new StringWriter();
         transformer.transform(new DOMSource(node), new StreamResult(writer));
-
         return writer.toString();
+    }
+    @Override
+    public boolean saveIfNotExist(Dcc dcc) {
+        if (!dccRepository.existsDccByPid(dcc.getPid())) {
+            dccRepository.save(dcc);
+            return true;
+        } else return false;
+    }
+
+    @Override
+    public boolean findIfPidExist(Dcc dcc) {
+        return dccRepository.existsDccByPid(dcc.getPid());
+    }
+
+    @Override
+    public boolean existsDccByPid(String pid) {
+        return dccRepository.existsDccByPid(pid);
     }
 //    @Override
 //    public String searchRefType( String refType ) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
@@ -128,7 +149,7 @@ public class DccServiceImpl implements DccService {
 //            String decodedXml = new String(byteBase64, StandardCharsets.UTF_8);
 //           // System.out.println(decodedXml);
 //
-//            //paese the xml
+//            //parse the xml
 //            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 //            DocumentBuilder builder= factory.newDocumentBuilder();
 //            InputSource is = new InputSource(new StringReader(decodedXml));
