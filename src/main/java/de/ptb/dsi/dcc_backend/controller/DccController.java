@@ -49,22 +49,22 @@ public class DccController {
     private  final DccServiceImpl dccService;
 
     @Operation(
-            summary = "Retrieve available pidList of DCC ",
+            summary = "Retrieve available pidListUrl of DCC ",
             description = "The Get response is a List of String Pid data",
             tags = { "dccPidList"})
     @ApiResponses({
             @ApiResponse(responseCode = "200",description = "PidList url")
     })
     @GetMapping(value = "/dccPidList")
-    public List<String> getPidList() {
-        return dccService.getListDccPid();
+    public ResponseEntity<List<String>> getPidList() {
+        return  new ResponseEntity<>(dccService.getListDccPid(),HttpStatus.OK);
     }
     @GetMapping(value = "/dccPid")
-    public List<String> getListPid() {
-        return dccService.getListPid();
+    public ResponseEntity<List<String>> getListPid() {
+        return new ResponseEntity<>(dccService.getListPid(),HttpStatus.OK);
     }
     @GetMapping(value = "/dcc/{pid}")
-    public ResponseEntity<String> getDccByPid(@PathVariable String pid) {
+    public ResponseEntity<String> getBase64XmlDccByPid(@PathVariable String pid) {
         if (dccService.existsDccByPid(pid)) {
         return new ResponseEntity<>(dccService.getBase64XmlByPid(pid), HttpStatus.OK);}
         else return new ResponseEntity<>("pid not exist", HttpStatus.NOT_FOUND);
@@ -77,10 +77,10 @@ public class DccController {
         else return new ResponseEntity<>( HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping(value = "/addDcc")
+    @PostMapping(value = "/addDcc", produces = {MediaType.APPLICATION_JSON_VALUE})
     public ResponseEntity<String> addDcc(@RequestBody Dcc dcc) {
         if (dccService.saveIfNotExist(dcc)) {
-            dccService.saveIfNotExist(dcc);
+            dccService.saveDcc(dcc);
             return new ResponseEntity<>(" Dcc successful created", HttpStatus.CREATED);
         } else return new ResponseEntity<>(dcc.getPid() + "  :pid already exist", HttpStatus.BAD_REQUEST);
     }

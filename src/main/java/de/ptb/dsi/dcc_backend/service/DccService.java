@@ -13,7 +13,7 @@ public interface DccService {
     List<Dcc> getDccList();
     Dcc getDccByPid(String pid);
     Boolean isDccValid(String pid);
-    String saveDcc(Dcc dcc);
+    Dcc saveDcc(Dcc dcc);
     String getBase64XmlByPid(String pid);
     List<String> getListDccPid();
 //    String searchRefType(String refType ) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException;

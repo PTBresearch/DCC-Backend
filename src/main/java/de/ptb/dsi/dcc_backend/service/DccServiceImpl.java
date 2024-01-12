@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class DccServiceImpl implements DccService {
     private final DccRepository dccRepository;
 
+
     @Override
     public List<Dcc> getDccList() {
         return dccRepository.findAll();
@@ -47,19 +48,23 @@ public class DccServiceImpl implements DccService {
         Dcc dcc = dccRepository.findDccByPid(pid);
         return dcc.isDccValid();
     }
-
     @Override
-    public String saveDcc(Dcc dcc) {
-        if(dccRepository.existsDccByPid(dcc.getPid()))
-        {return "pid already exist";}
-        else dccRepository.save(dcc);
-        return "dcc created";
+    public boolean saveIfNotExist(Dcc dcc) {
+        if (!dccRepository.existsDccByPid(dcc.getPid())) {
+            return true;
+        } else return false;
+    }
+    @Override
+    public Dcc saveDcc(Dcc dcc) {
+        if (!dccRepository.existsDccByPid(dcc.getPid())) {
+            dccRepository.save(dcc);
+        }
+        return dcc;
     }
 
     @Override
     public String getBase64XmlByPid(String pid) {
         String base64 = dccRepository.findDccByPid(pid).getXmlBase64();
-
         if (dccRepository.existsDccByPid(pid)) {
             System.out.println("base64: " + base64);
             return base64;
@@ -82,9 +87,9 @@ public class DccServiceImpl implements DccService {
     }
 
     @Override
-    public String findNodeByRefType(String pid, String attributeValue) throws ParserConfigurationException, IOException, SAXException, TransformerException {
-        boolean dcc = dccRepository.existsDccByPid(pid);
-        if (dcc) {
+    public String findNodeByRefType(String pid, String refType) throws ParserConfigurationException, IOException, SAXException, TransformerException {
+        boolean existsDccByPid = dccRepository.existsDccByPid(pid);
+        if (existsDccByPid) {
             //decode Base 64 and parse  xml
             String xmlBase64 = dccRepository.findDccByPid(pid).getXmlBase64();
             byte[] byteBase64 = Base64.getDecoder().decode(xmlBase64);
@@ -100,7 +105,7 @@ public class DccServiceImpl implements DccService {
                 Node node = nodeList.item(i);
                 if (node instanceof Element element) {
                     //check if the element has the desired attribute with the desired value
-                    if (element.hasAttribute("refType") && element.getAttribute("refType").equals(attributeValue)) {
+                    if (element.hasAttribute("refType") && element.getAttribute("refType").equals(refType)) {
                         //convert the found element to a string, including its children and attributes
                         String resultXml = nodeToString(element);
                         System.out.println("result: " + resultXml);
@@ -108,7 +113,7 @@ public class DccServiceImpl implements DccService {
                     }
                 }
             }
-            return " refType  not exist";
+            return "refType not exist";
         } else
             return "pid not exist";
     }
@@ -122,13 +127,7 @@ public class DccServiceImpl implements DccService {
         transformer.transform(new DOMSource(node), new StreamResult(writer));
         return writer.toString();
     }
-    @Override
-    public boolean saveIfNotExist(Dcc dcc) {
-        if (!dccRepository.existsDccByPid(dcc.getPid())) {
-            dccRepository.save(dcc);
-            return true;
-        } else return false;
-    }
+
 
     @Override
     public boolean findIfPidExist(Dcc dcc) {

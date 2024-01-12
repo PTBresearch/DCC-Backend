@@ -8,14 +8,14 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.UuidGenerator;
 
+import java.util.UUID;
+
 
 @Entity
 @Table(name = "dcc")
-@Data @NoArgsConstructor @AllArgsConstructor @ToString
+@Data @NoArgsConstructor @AllArgsConstructor
 public class Dcc {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Hidden
     @UuidGenerator
     private String id;
     private String pid;
