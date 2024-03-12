@@ -35,10 +35,10 @@ public class DccRepositoryTest {
     @Test
     void should_find_dcc_ByPid () {
        //given
-        String name= "CCM.M-K1-NPL9507";
+        String givenName= "CCM.M-K1-NPL9507";
        //when
         entityManager.persist(dcc);
-        Dcc expected = repository.findDccByPid(name);
+        Dcc expected = repository.findDccByPid(givenName);
         Optional<Dcc> dccOptional =repository.findById(dcc.getId());
         Dcc dccexepted = dccOptional.get();
         //then

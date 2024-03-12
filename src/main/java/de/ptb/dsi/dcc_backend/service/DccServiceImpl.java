@@ -75,7 +75,9 @@ public class DccServiceImpl implements DccService {
     public List<String> getListDccPid() {
         List<Dcc> dccList = dccRepository.findAll();
         List<String> pidList = dccList.stream()
-                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+
         return pidList;
     }
     @Override
