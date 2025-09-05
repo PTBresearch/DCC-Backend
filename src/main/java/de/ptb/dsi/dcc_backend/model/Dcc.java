@@ -18,7 +18,7 @@ public class Dcc {
     private String id;
     private String pid;
     @Lob
-    @Column(length = 10485763)
+    @Column(columnDefinition = "LONGBLOB")
     private String xmlBase64;
     private boolean isDccValid;
 
