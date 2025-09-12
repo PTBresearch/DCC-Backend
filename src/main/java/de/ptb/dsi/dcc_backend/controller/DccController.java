@@ -39,7 +39,8 @@ import java.util.List;
                         url = "https://www.ptb.de",
                         email = "contact@ptb.de"
                 )),servers = {
-        @Server(url = "http://localhost:8085", description = "local system")
+        @Server(url = "https://d-si.ptb.de", description = "URL in production  environment"),
+        @Server(url = "http://localhost:8085", description = "URL local environment")
 })
 @Tag(name = "DCC_Controller" , description = "Controller with endpoints: /api/d-dcc")
 @RestController
