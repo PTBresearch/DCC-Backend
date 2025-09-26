@@ -1,0 +1,4 @@
+POST https://freetsa.org
+Content-Type: application/timestamp-query
+
+< ./nim3.tsq

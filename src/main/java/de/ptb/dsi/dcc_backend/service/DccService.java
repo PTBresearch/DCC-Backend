@@ -1,6 +1,6 @@
 package de.ptb.dsi.dcc_backend.service;
 
-import de.ptb.dsi.dcc_backend.model.Dcc;
+import de.ptb.dsi.dcc_backend.entity.Dcc;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -15,7 +15,7 @@ public interface DccService {
     Boolean isDccValid(String pid);
     Dcc saveDcc(Dcc dcc);
     String getBase64XmlByPid(String pid);
-    List<String> getListDccPid();
+    List<String> getUrlListDccPid();
 //    String searchRefType(String refType ) throws ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException;
     String findNodeByRefType(String pid ,String attributeValue) throws ParserConfigurationException, IOException, SAXException, TransformerException;
 //    String convertDocumentToString(Document document) throws TransformerException;
@@ -23,6 +23,6 @@ public interface DccService {
     boolean  saveIfNotExist (Dcc dcc);
     boolean findIfPidExist(Dcc dcc);
     boolean existsDccByPid(String pid);
-    List<String> getListPid();
+
 
 }
