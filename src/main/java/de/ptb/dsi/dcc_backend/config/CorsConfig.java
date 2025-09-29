@@ -40,9 +40,9 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:4200","http://localhost:8085","https://d-si.ptb.de/api/d-comparison",
+                        .allowedOrigins("http://localhost:4200","https://d-si.ptb.de/api/d-comparison",
                                 "https://d-si.ptb.de","http://localhost:8085/api/d-dcc/v3/api-docs","http://localhost:8085/swagger-ui/index.html")
-                        .allowedMethods("GET","POST","PUT","DELETE")
+                        .allowedMethods("GET","POST","PUT","DELETE" , "OPTIONS")
                         .allowedHeaders("*")
                         .exposedHeaders("header1","header2")
                         .allowCredentials(false).maxAge(3600);

@@ -151,23 +151,43 @@ public class DccController {
         return  new ResponseEntity<>(dccService.getListPidByUser(),HttpStatus.OK);
     }
 
+    @GetMapping("/dccList")
+    @Hidden
+    public ResponseEntity<List<Dcc>> getDCcList() {
+
+        return  new ResponseEntity<>(dccService.getDccList(),HttpStatus.OK);
+    }
 
     @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadDcc(
-            @RequestPart("file") MultipartFile file,
-            @RequestPart("pid") String pid,
-            Principal principal) throws Exception {
+            @RequestPart("file") MultipartFile file, @RequestPart("status") String status,
+            @RequestPart("pid") String pid, @RequestPart("information") String information) throws Exception {
 
-        String username = principal.getName();
-        User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+
 
         byte[] xmlBytes = file.getBytes();
 
-        dccService.processAndSaveDcc(pid, xmlBytes, user);
+        dccService.processAndSaveDcc(pid,information,status, xmlBytes);
 
         return ResponseEntity.accepted().body("Upload received, Time Stamp Request file is generated.");
     }
+//    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<String> uploadDcc(
+//            @RequestPart("file") MultipartFile file,
+//            @RequestPart("pid") String pid,
+//            Principal principal) throws Exception {
+//
+//        String username = principal.getName();
+//        User user = userRepository.findByUserName(username)
+//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+//
+//        byte[] xmlBytes = file.getBytes();
+//
+//        dccService.processAndSaveDcc(pid, xmlBytes, user);
+//
+//        return ResponseEntity.accepted().body("Upload received, Time Stamp Request file is generated.");
+//    }
     @GetMapping("/downloadXml")
     public ResponseEntity<byte[]> downloadDcc(@RequestParam("pid") String pid, Principal principal) {
         String username = principal.getName();
@@ -193,6 +213,22 @@ public class DccController {
 
         return new ResponseEntity<>(xmlBytes, headers, HttpStatus.OK);
     }
+//    @PostMapping("/verify")
+//    public ResponseEntity<String> verifyTimestamp(
+//            @RequestParam("pid") String pid) {
+//
+//
+//
+//        Dcc dcc = dccRepository.findDccByPid(pid);
+//
+//        try {
+//            byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
+//            boolean valid = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile());
+//            return ResponseEntity.ok(valid ? "Timestamp is valid" : "Timestamp is invalid");
+//        } catch (Exception e) {
+//            return ResponseEntity.status(500).body("Error during verification: " + e.getMessage());
+//        }
+//    }
     @PostMapping("/verify")
     public ResponseEntity<String> verifyTimestamp(
             @RequestParam("pid") String pid,

@@ -17,9 +17,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.util.List;
 
 
 @Configuration
@@ -33,7 +37,7 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // Security Filter Chain konfigurieren
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -42,6 +46,8 @@ public class SecurityConfig {
                     try {
                         auth
                                 .requestMatchers("/api/d-dcc/dccPidList").permitAll()
+                                .requestMatchers("/api/d-dcc/dccList").permitAll()
+                                .requestMatchers("/api/d-dcc/upload").permitAll()
                                 .requestMatchers("/api/d-dcc/swagger-ui/index.html").permitAll()
                                 .requestMatchers("/api/d-dcc/**").authenticated()
                              //   .requestMatchers("/api/d-dcc/upload").hasRole("COORDINATOR")
@@ -80,7 +86,19 @@ public class SecurityConfig {
                 .and()
                 .build();
     }
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 //    @Bean
 //    public RestTemplate restTemplate() {
 //        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();

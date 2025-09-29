@@ -178,7 +178,7 @@ public class DccServiceImpl implements DccService {
     public String findNodeByRefType(String pid, String refType) throws ParserConfigurationException, IOException, SAXException, TransformerException {
         boolean existsDccByPid = dccRepository.existsDccByPid(pid);
         if (existsDccByPid) {
-            //decode Base 64 and parse  xml
+            //decode Base 64
             String xmlBase64 = dccRepository.findDccByPid(pid).getXmlBase64();
             byte[] byteBase64 = Base64.getDecoder().decode(xmlBase64);
             String decodedXml = new String(byteBase64, StandardCharsets.UTF_8);
@@ -231,8 +231,7 @@ public class DccServiceImpl implements DccService {
                 .orElseThrow(() -> new RuntimeException("DCC not found"));
         return dcc.getXmlBase64();
     }
-
-    public Dcc processAndSaveDcc(String pid, byte[] xmlBytes, User user) throws Exception {
+    public Dcc processAndSaveDcc(String pid, String information,String status, byte[] xmlBytes) throws Exception {
         if (dccRepository.existsDccByPid(pid)) {
             throw new DccAlreadyExistsException(pid);
         }
@@ -272,13 +271,61 @@ public class DccServiceImpl implements DccService {
                 .xmlBase64(xmlBase64)
                 .signedTsrFile(tsrBytes)
                 .isDccValid(true)
-                .status("private")
-                .user(user)
+                .information(information)
+                .status(status)
                 .createdAt(LocalDateTime.now())
                 .build();
         dccRepository.save(dcc);
         return dcc;
     }
+
+//    public Dcc processAndSaveDcc(String pid, byte[] xmlBytes, User user) throws Exception {
+//        if (dccRepository.existsDccByPid(pid)) {
+//            throw new DccAlreadyExistsException(pid);
+//        }
+//        long startTotal = System.currentTimeMillis();
+//
+//        // 1. XML in Base64
+//        long start = System.currentTimeMillis();
+//        String xmlBase64 = Base64.getEncoder().encodeToString(xmlBytes);
+//        System.out.println("Base64 Encoding dauerte: " + (System.currentTimeMillis() - start) + "ms");
+//
+//        // 2. SHA-512 Hash
+//        start = System.currentTimeMillis();
+//        MessageDigest digest = MessageDigest.getInstance("SHA-512");
+//        byte[] hash = digest.digest(xmlBytes);
+//        System.out.println("Hashing dauerte: " + (System.currentTimeMillis() - start) + "ms");
+//
+//        // 3. TimestampRequest erzeugen
+//        start = System.currentTimeMillis();
+//        TimeStampRequestGenerator reqGen = new TimeStampRequestGenerator();
+//        reqGen.setCertReq(true);
+//        TimeStampRequest request = reqGen.generate(
+//                new ASN1ObjectIdentifier("2.16.840.1.101.3.4.2.3"), // SHA-512 OID
+//                hash
+//        );
+//        byte[] tsqBytes = request.getEncoded();
+//        System.out.println("TimestampRequest erzeugen dauerte: " + (System.currentTimeMillis() - start) + "ms");
+//
+//        // 4. Anfrage an FreeTSA
+//        start = System.currentTimeMillis();
+//        byte[] tsrBytes = sendToFreeTSA(tsqBytes);
+//        System.out.println("FreeTSA-Anfrage dauerte: " + (System.currentTimeMillis() - start) + "ms");
+//
+//        // 5. Dcc bauen und speichern
+//        start = System.currentTimeMillis();
+//        Dcc dcc = Dcc.builder()
+//                .pid(pid)
+//                .xmlBase64(xmlBase64)
+//                .signedTsrFile(tsrBytes)
+//                .isDccValid(true)
+//                .status("private")
+//                .user(user)
+//                .createdAt(LocalDateTime.now())
+//                .build();
+//        dccRepository.save(dcc);
+//        return dcc;
+//    }
 
     public List<Dcc> findAllByUser(User user) {
         return dccRepository.findByUser(user);
@@ -305,7 +352,7 @@ public class DccServiceImpl implements DccService {
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/timestamp-query");
         conn.setRequestProperty("Content-Length", String.valueOf(tsqBytes.length));
-//        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("webproxy.berlin.ptb.de", 8080));
+//        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("webproxy.bs.ptb.de", 8080));
 //         conn = (HttpURLConnection) url.openConnection(proxy);
         conn.setDoOutput(true);
         try (OutputStream os = conn.getOutputStream()) {
