@@ -3,8 +3,8 @@ package de.ptb.dsi.dcc_backend.controller;
 
 import de.ptb.dsi.dcc_backend.dto.ChangePasswordRequest;
 import de.ptb.dsi.dcc_backend.dto.LoginRequest;
+import de.ptb.dsi.dcc_backend.dto.LoginResponse;
 import de.ptb.dsi.dcc_backend.entity.User;
-import de.ptb.dsi.dcc_backend.exception.UserAlreadyExistsException;
 import de.ptb.dsi.dcc_backend.exception.UserNotFoundException;
 import de.ptb.dsi.dcc_backend.repository.DccRepository;
 import de.ptb.dsi.dcc_backend.repository.UserRepository;
@@ -305,7 +305,6 @@ public class DccController {
 //        return ResponseEntity.ok(allDccs);
 //    }
     @GetMapping("/users")
-    @Hidden
     public ResponseEntity<List<User>> getAllUsers() {
         return new ResponseEntity<>(userRepository.findAll() ,HttpStatus.OK);
 
@@ -315,10 +314,15 @@ public class DccController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             User user = authService.login(request);
+            LoginResponse response = new LoginResponse(
+                    user.getUserName(),
+                    user.getRole(),
+                    user.isActive()
+            );
 
-            return ResponseEntity.ok("Login successful for user: " + user.getUserName());
+            return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(401).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
     @PutMapping("/change-password")

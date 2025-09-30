@@ -30,20 +30,20 @@ public class DatabaseUpdate implements CommandLineRunner {
                     .email("admin@example.com")
                     .password(passwordEncoder.encode("admin123456789"))
                     .role("ADMIN")
-                    .isActiv(true).build();
+                    .active(true).build();
             User user1 = User.builder()
                     .userName("Christian")
                     .email("christian@example.com")
                     .password(passwordEncoder.encode("christian123456789"))
                     .role("COORDINATOR")
-                    .isActiv(true)
+                    .active(true)
                     .build();
             User user2 = User.builder()
                     .userName("Hugo")
                     .email("hugo@example.com")
                     .password(passwordEncoder.encode("hugo123456789"))
                     .role("COORDINATOR")
-                    .isActiv(true)
+                    .active(true)
                     .build();
 
 

@@ -10,14 +10,10 @@ import de.ptb.dsi.dcc_backend.entity.Dcc;
 import de.ptb.dsi.dcc_backend.repository.UserRepository;
 import io.swagger.v3.oas.annotations.Hidden;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.tsp.TimeStampRequest;
 import org.bouncycastle.tsp.TimeStampRequestGenerator;
 import org.bouncycastle.tsp.TimeStampResponse;
-import org.bouncycastle.tsp.TimeStampToken;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,8 +32,6 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -148,7 +142,7 @@ public class DccServiceImpl implements DccService {
                 email(user.getEmail()).
                 password(user.getPassword()).
                 role(user.getRole()).
-                isActiv(user.isActiv()).
+                active(user.isActive()).
                 build();
         return newUser;
     }

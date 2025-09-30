@@ -38,7 +38,7 @@ public class AuthService {
             throw new RuntimeException("Invalid login data");
         }
 
-        if (!user.isActiv()) {
+        if (!user.isActive()) {
             throw new RuntimeException("User is not active");
         }
 

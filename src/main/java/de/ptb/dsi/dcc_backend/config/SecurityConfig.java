@@ -38,45 +38,55 @@ public class SecurityConfig {
     }
 
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable()) // CSRF deaktivieren
-                .authorizeHttpRequests(auth -> {
-                    try {
-                        auth
-                                .requestMatchers("/api/d-dcc/dccPidList").permitAll()
-                                .requestMatchers("/api/d-dcc/dccList").permitAll()
-                                .requestMatchers("/api/d-dcc/upload").permitAll()
-                                .requestMatchers("/api/d-dcc/swagger-ui/index.html").permitAll()
-                                .requestMatchers("/api/d-dcc/**").authenticated()
-                             //   .requestMatchers("/api/d-dcc/upload").hasRole("COORDINATOR")
-//                                .requestMatchers("/api/d-dcc/change-password").hasRole("ADMIN")
-                                .anyRequest().hasRole("ADMIN");
-                            //    .and()
-                            //    .formLogin(Customizer.withDefaults()) // Aktiviert Login-Formular
-////                                .requestMatchers("/api/d-dcc/**").permitAll()
-////                                .requestMatchers("/api/d-dcc/userListPid").hasRole("COORDINATOR")
-////                                .anyRequest().hasRole("ADMIN")
-////                                .and()
-////                                .formLogin(Customizer.withDefaults()) // Aktiviert Login-Formular
-                              //  .logout()
-//                                .logoutUrl("/logout") // <-- Angular URL
-//                                .logoutSuccessHandler((request, response, authentication) -> {
-//                                    response.setStatus(HttpServletResponse.SC_OK);
-//                                })
-                                //.invalidateHttpSession(true)
-                              //  .deleteCookies("JSESSIONID"); // Session-Cookie löschen
-
-
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                })
-                .httpBasic();
-
-        return http.build();
-    }
+//    @Bean
+//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//        http
+//                .csrf(csrf -> csrf.disable()) // CSRF deaktivieren
+//                .authorizeHttpRequests(auth -> {
+//                    try {
+//                        auth
+//                                .requestMatchers("/api/d-dcc/dccPidList").permitAll()
+//                                .requestMatchers("/api/d-dcc/dccList").permitAll()
+//                                .requestMatchers("/api/d-dcc/upload").permitAll()
+//                                .requestMatchers("/api/d-dcc/swagger-ui/index.html").permitAll()
+//                                .requestMatchers("/api/d-dcc/**").authenticated()
+//                             //   .requestMatchers("/api/d-dcc/upload").hasRole("COORDINATOR")
+////                                .requestMatchers("/api/d-dcc/change-password").hasRole("ADMIN")
+//                                .anyRequest().hasRole("ADMIN");
+//                            //    .and()
+//                            //    .formLogin(Customizer.withDefaults()) // Aktiviert Login-Formular
+//////                                .requestMatchers("/api/d-dcc/**").permitAll()
+//////                                .requestMatchers("/api/d-dcc/userListPid").hasRole("COORDINATOR")
+//////                                .anyRequest().hasRole("ADMIN")
+//////                                .and()
+//////                                .formLogin(Customizer.withDefaults()) // Aktiviert Login-Formular
+//                              //  .logout()
+////                                .logoutUrl("/logout") // <-- Angular URL
+////                                .logoutSuccessHandler((request, response, authentication) -> {
+////                                    response.setStatus(HttpServletResponse.SC_OK);
+////                                })
+//                                //.invalidateHttpSession(true)
+//                              //  .deleteCookies("JSESSIONID"); // Session-Cookie löschen
+//
+//
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                })
+//                .httpBasic();
+//
+//        return http.build();
+//    }
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http
+            .cors(Customizer.withDefaults()) // CORS aktivieren
+            .csrf().disable()
+            .authorizeHttpRequests(authz -> authz
+                    .anyRequest().permitAll()
+            );
+    return http.build();
+}
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {

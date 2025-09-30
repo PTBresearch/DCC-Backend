@@ -2,6 +2,7 @@ package de.ptb.dsi.dcc_backend.entity;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,7 +28,7 @@ public class User {
     private String email;
     private String password;
     private String role;
-    private boolean isActiv;
+    private boolean active;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Dcc>dccList;
