@@ -137,16 +137,16 @@ public class DccServiceImpl implements DccService {
         List<Dcc> publicDccList = dccRepository.findByStatus("public");
 
         List<String> publicPidList = publicDccList.stream()
-                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-//                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
+//                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
         return publicPidList;
     }
     @Override
     public List<String> getUrlListDccPid() {
         List<Dcc> dccList = dccRepository.findAll();
         List<String> pidList = dccList.stream()
-//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
         return pidList;
     }
@@ -163,8 +163,8 @@ public class DccServiceImpl implements DccService {
         List<Dcc> coordinatorDccList = dccRepository.findDccsByUser_UserName(principal.getName());
 
         return coordinatorDccList.stream()
-//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
     }
 
