@@ -2,6 +2,7 @@ package de.ptb.dsi.dcc_backend.service;
 
 import de.ptb.dsi.dcc_backend.config.CustomProperties;
 import de.ptb.dsi.dcc_backend.dto.ChangePasswordRequest;
+import de.ptb.dsi.dcc_backend.dto.InvalidPasswordException;
 import de.ptb.dsi.dcc_backend.dto.TimestampVerificationResult;
 import de.ptb.dsi.dcc_backend.entity.User;
 import de.ptb.dsi.dcc_backend.exception.DccAlreadyExistsException;
@@ -15,9 +16,9 @@ import lombok.AllArgsConstructor;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.tsp.*;
 import org.bouncycastle.util.encoders.Hex;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
@@ -39,6 +40,9 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Pageable;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -50,6 +54,7 @@ import java.security.Principal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,33 +125,33 @@ public class DccServiceImpl implements DccService {
 
 
 
-    public List<String> getListPid(Principal principal) {
-        Authentication auth = (Authentication) principal;
-        boolean isAdmin = auth.getAuthorities().stream()
-                .anyMatch(role -> role.getAuthority().equals("ROLE_ADMIN"));
+    public List<String> getListPid() {
 
-        if (isAdmin) {
             List<Dcc> dccList = dccRepository.findAll();
-            return dccList.stream().map(Dcc::getPid).collect(Collectors.toList());
-        } else {
-            throw new AccessDeniedException("Only admin role has authentication to access this resource.");
-        }
+
+            return dccList.stream()
+                    .map(dcc -> "http://localhost:8085/api/d-dcc/dcc/" + dcc.getPid())
+//                    .map(dcc -> "https://d-si.ptb.de/api/d-dcc/dcc/" + dcc.getPid())
+
+                    .collect(Collectors.toList());
+
     }
+
 
     public List<String> getPublicListPid() {
         List<Dcc> publicDccList = dccRepository.findByStatus("public");
 
         List<String> publicPidList = publicDccList.stream()
-//                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
+                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
         return publicPidList;
     }
     @Override
     public List<String> getUrlListDccPid() {
         List<Dcc> dccList = dccRepository.findAll();
         List<String> pidList = dccList.stream()
-                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
         return pidList;
     }
@@ -163,8 +168,8 @@ public class DccServiceImpl implements DccService {
         List<Dcc> coordinatorDccList = dccRepository.findDccsByUser_UserName(principal.getName());
 
         return coordinatorDccList.stream()
-                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
     }
 
@@ -172,38 +177,21 @@ public class DccServiceImpl implements DccService {
         return dccRepository.findDccsByUser_UserName(principal.getName());
     }
 
-    public List<Dcc> getPublicAndOwnDccList(Principal principal) {
-        String userName = principal.getName();
 
-        List<Dcc> publicDccs = dccRepository.findByStatusIgnoreCase("public");
-        List<Dcc> userDccs = dccRepository.findByUser_UserName(userName);
-
-        // Zusammenführen & Duplikate entfernen
-        Set<Dcc> publicAndOwnDccSet = new HashSet<>();
-        publicAndOwnDccSet.addAll(publicDccs);
-        publicAndOwnDccSet.addAll(userDccs);
-        return new ArrayList<>(publicAndOwnDccSet);
+    public Page<Dcc> getPublicAndOwnDccList(Principal principal, Pageable pageable) {
+    if (principal == null) {
+        throw new RuntimeException("Principal is null. Are you authenticated?");
     }
 
-    public Page<Dcc> getPublicAndOwnDccListPaged(Principal principal, int page, int size) {
-        String userName = principal.getName();
-
-        List<Dcc> publicDccs = dccRepository.findByStatusIgnoreCase("public");
-        List<Dcc> userDccs = dccRepository.findByUser_UserName(userName);
-
-        Set<Dcc> combinedSet = new LinkedHashSet<>();
-        combinedSet.addAll(publicDccs);
-        combinedSet.addAll(userDccs);
-
-        List<Dcc> combinedList = new ArrayList<>(combinedSet);
-        // Paging
-        int start = page * size;
-        int end = Math.min(start + size, combinedList.size());
-
-        List<Dcc> pageContent = start < end ? combinedList.subList(start, end) : Collections.emptyList();
-
-        return new PageImpl<>(pageContent, PageRequest.of(page, size), combinedList.size());
+    String userName = principal.getName();
+    System.out.println(" Logged-in user: " + userName);
+        return dccRepository.findPublicOrOwnDcc(userName, pageable);
+}
+    public Page<Dcc> getAllDccListPaged(Principal principal, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return dccRepository.findAll(pageable); // Standard-Methode von JpaRepository
     }
+
 
     public User addUser(User user) {
         if (userRepository.existsUserByUserName(user.getUserName())) {
@@ -212,20 +200,35 @@ public class DccServiceImpl implements DccService {
         User newUser = User.builder().
                 userName(user.getUserName()).
                 email(user.getEmail()).
-                password(user.getPassword()).
+                password(passwordEncoder.encode(user.getPassword())).
                 role(user.getRole()).
                 active(user.isActive()).
                 build();
-        return newUser;
+        return userRepository.save(newUser);
+    }
+    public User updateUser(String id, User updatedUser) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + id + " not found."));
+
+        user.setUserName(updatedUser.getUserName());
+        user.setEmail(updatedUser.getEmail());
+        user.setRole(updatedUser.getRole());
+        user.setActive(updatedUser.isActive());
+
+        // Optional: Passwort nur ändern, wenn es gesetzt ist
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(updatedUser.getPassword());
+        }
+
+        return userRepository.save(user);
     }
 
-    public void deleteUserByUserName(String username) {
-        Optional<User> user = userRepository.findByUserName(username);
-        if (user.isEmpty()) {
-            throw new UserNotFoundException("User with username '" + username + "' not found.");
-        }
-        userRepository.delete(user.get());
+    public void deleteUserById(String id,Principal principal) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User with ID " + id + " not found."));
+        userRepository.delete(user);
     }
+
 
     public List<String> getListPidByUser() {
         List<Dcc> userDccList = dccRepository.findDccsByUser_UserName("Max");
@@ -295,26 +298,9 @@ public class DccServiceImpl implements DccService {
     public boolean existsDccByPid(String pid) {
         return dccRepository.existsDccByPid(pid);
     }
-    public String getBase64EncodedXml(String pid, Principal principal) {
-        String username = principal.getName();
-        User user = userRepository.findByUserName(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+    public String getBase64EncodedXml(String pid) {
 
-        boolean isAdminOrCoordinator = user.getRole().equalsIgnoreCase("ADMIN")
-                || user.getRole().equalsIgnoreCase("COORDINATOR");
-
-        Optional<Dcc> dccOptional;
-
-        if (isAdminOrCoordinator) {
-            dccOptional = Optional.ofNullable(dccRepository.findDccByPid(pid));
-        } else {
-            dccOptional = dccRepository.findByPidAndUser(pid, user);
-        }
-
-        Dcc dcc = dccOptional.orElseThrow(() -> {
-            log.warn("DCC not found or access denied for pid='{}' and user='{}'", pid, username);
-            return new ResponseStatusException(HttpStatus.NOT_FOUND, "DCC not found or access denied");
-        });
+        Dcc dcc =dccRepository.findDccByPid(pid);
 
         String base64Xml = dcc.getXmlBase64();
 
@@ -362,25 +348,13 @@ public class DccServiceImpl implements DccService {
 
         // 5. Dcc bauen und speichern
         //  pid ggf. bcrypt hashen
-        String pidToSave = pid;
-        if ("private".equalsIgnoreCase(status)) {
-            pidToSave = passwordEncoder.encode(pid);
-        }
-        start = System.currentTimeMillis();
-        Dcc dcc = Dcc.builder()
-                .pid(pidToSave)
-                .xmlBase64(xmlBase64)
-                .signedTsrFile(tsrBytes)
-                .isDccValid(true)
-                .information(information)
-                .status(status)
-                .user(user)
-                .createdAt(LocalDateTime.now())
-                .build();
-        dccRepository.save(dcc);
+//        String pidToSave = pid;
+//        if ("private".equalsIgnoreCase(status)) {
+//            pidToSave = passwordEncoder.encode(pid);
+//        }
 //        start = System.currentTimeMillis();
 //        Dcc dcc = Dcc.builder()
-//                .pid(pid)
+//                .pid(pidToSave)
 //                .xmlBase64(xmlBase64)
 //                .signedTsrFile(tsrBytes)
 //                .isDccValid(true)
@@ -390,11 +364,23 @@ public class DccServiceImpl implements DccService {
 //                .createdAt(LocalDateTime.now())
 //                .build();
 //        dccRepository.save(dcc);
-//        // 6. Wenn status == "private", pid mit ID überschreiben und nochmal speichern
-//        if ("private".equalsIgnoreCase(status)) {
-//            dcc.setPid(String.valueOf(dcc.getId()));  // id in String umwandeln
-//            dcc = dccRepository.save(dcc);            // nochmal speichern
-//        }
+        start = System.currentTimeMillis();
+        Dcc dcc = Dcc.builder()
+                .pid(pid)
+                .xmlBase64(xmlBase64)
+                .signedTsrFile(tsrBytes)
+                .isDccValid(true)
+                .information(information)
+                .status(status)
+                .user(user)
+                .createdAt(LocalDateTime.now())
+                .build();
+        dccRepository.save(dcc);
+        // 6. Wenn status == "private", pid mit ID überschreiben und nochmal speichern
+        if ("private".equalsIgnoreCase(status)) {
+            dcc.setPid(String.valueOf(dcc.getId()));  // id in String umwandeln
+            dcc = dccRepository.save(dcc);            // nochmal speichern
+        }
         return dcc;
     }
 
@@ -437,8 +423,8 @@ public boolean deleteByIdAndUserOrAdmin(String id, User user) {
 
         Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(customProperties.getProxyHost(), customProperties.getProxyPort()));
         URL url = new URL("https://freetsa.org/tsr");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
-//        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+//        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/timestamp-query");
         conn.setRequestProperty("Content-Length", String.valueOf(tsqBytes.length));
@@ -456,7 +442,7 @@ public boolean deleteByIdAndUserOrAdmin(String id, User user) {
             return baos.toByteArray();
         }
     }
-    public TimestampVerificationResult verifyTimestamp(byte[] data, byte[] tsrBytes, Principal principal) throws Exception {
+    public TimestampVerificationResult verifyTimestamp(byte[] data, byte[] tsrBytes) throws Exception {
         TimeStampResponse response = new TimeStampResponse(tsrBytes);
 
         // Hash des Originaldokuments berechnen
@@ -493,7 +479,7 @@ public boolean deleteByIdAndUserOrAdmin(String id, User user) {
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
             if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
-                throw new IllegalArgumentException("Old password is incorrect");
+                throw new InvalidPasswordException("Old password is incorrect");
             }
 
             user.setPassword(passwordEncoder.encode(request.getNewPassword()));

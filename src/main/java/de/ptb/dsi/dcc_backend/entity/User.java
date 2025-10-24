@@ -22,7 +22,7 @@ public class User {
 
     @Id
     @UuidGenerator
-    @JsonIgnore
+
     private String id;
     private String userName;
     private String email;
@@ -30,6 +30,7 @@ public class User {
     private String role;
     private boolean active;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+//    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Dcc>dccList;
 }

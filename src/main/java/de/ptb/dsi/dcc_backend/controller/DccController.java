@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.*;
 
 import org.springframework.security.core.Authentication;
@@ -37,6 +38,8 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.xpath.XPathExpressionException;
+import org.springframework.data.domain.Pageable;
+
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
@@ -54,9 +57,9 @@ import java.util.Optional;
                         url = "https://www.ptb.de",
                         email = "contact@ptb.de"
                 )), servers = {
-        @Server(url = "http://localhost:8085", description = "URL local environment"),
+//        @Server(url = "http://localhost:8085", description = "URL local environment"),
         @Server(url = "https://d-si.ptb.de", description = "URL in production  environment")
-//       , @Server(url = "http://localhost:8085", description = "URL local environment")
+       , @Server(url = "http://localhost:8085", description = "URL local environment")
 })
 @Tag(name = "DCC_Controller", description = "Controller with endpoints: /api/d-dcc")
 @RestController
@@ -69,26 +72,17 @@ public class DccController {
     private final DccRepository dccRepository;
     private final AuthService authService;
 
-    //    @Operation(
-//            summary = "Retrieve available pidListUrl of DCC ",
-//            description = "The Get response is a List of String Pid data",
-//            tags = { "dccPidList"})
-//    @GetMapping(value = "/dccPidList")
-//    public ResponseEntity<List<String>> getPidList() {
-//        return  new ResponseEntity<>(dccService.getUrlListDccPid(),HttpStatus.OK);
-//    }
     @GetMapping(value = "/listAllDccPid")
-    public ResponseEntity<List<String>> getAllListPid(Principal principal) {
-        return new ResponseEntity<>(dccService.getListPid(principal), HttpStatus.OK);
+    public ResponseEntity<List<String>> getAllListPid() {
+        return new ResponseEntity<>(dccService.getListPid(), HttpStatus.OK);
     }
 
     @GetMapping(value = "/dcc/{pid}")
-    public ResponseEntity<String> getBase64XmlDccByPid(@RequestParam String pid) {
+    public ResponseEntity<String> getBase64XmlDccByPid(@PathVariable String pid) {
         if (dccService.existsDccByPid(pid)) {
             return new ResponseEntity<>(dccService.getBase64XmlByPid(pid), HttpStatus.OK);
         } else return new ResponseEntity<>("pid not exist", HttpStatus.NOT_FOUND);
     }
-    //TODO forgetpassword
 
     @GetMapping(value = "dccValidation/{pid}", produces = {MediaType.APPLICATION_JSON_VALUE})
     @Hidden
@@ -113,15 +107,28 @@ public class DccController {
         return new ResponseEntity<>(dccService.addUser(user), HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/by-username/{username}")
-    public ResponseEntity<?> deleteUserByUsername(@RequestParam String username) {
+    @DeleteMapping("/delete/users/{id}")
+    public ResponseEntity<?> deleteUserById(@PathVariable String id, Principal principal) {
+        String username = principal.getName();
+        User user = userRepository.findByUserName(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         try {
-            dccService.deleteUserByUserName(username);
+            dccService.deleteUserById(id, principal);
             return ResponseEntity.noContent().build();
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found: " + e.getMessage());
         }
     }
+    @PutMapping("edit/users/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable String id, @RequestBody User user) {
+        try {
+            User updated = dccService.updateUser(id, user);
+            return ResponseEntity.ok(updated);
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
 
     @GetMapping(value = "/dcc/{pid}/{refType}", produces = {MediaType.APPLICATION_XML_VALUE})
     @Hidden
@@ -160,10 +167,16 @@ public class DccController {
         return ResponseEntity.ok(dccList);
     }
 
-    @GetMapping("/publicAndCoordinatorDccList")
-    public ResponseEntity<List<Dcc>> getPublicAndCoordinatorDccList(Principal principal) {
-        return new ResponseEntity<>(dccService.getPublicAndOwnDccList(principal), HttpStatus.OK);
-    }
+@GetMapping("/publicAndCoordinatorDccList")
+public ResponseEntity<Page<Dcc>> getPublicAndCoordinatorDccList(
+        Principal principal,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
+) {
+    Pageable pageable =  PageRequest.of(page, size);
+    Page<Dcc> pageResult = dccService.getPublicAndOwnDccList(principal, pageable);
+    return ResponseEntity.ok(pageResult);
+}
 
     @GetMapping("/coordinatorListPidAndPublic")
     public ResponseEntity<List<String>> getCoordinatorListPidAndPublic(Principal principal) {
@@ -185,24 +198,14 @@ public class DccController {
         return new ResponseEntity<>(dccService.getDccList(), HttpStatus.OK);
     }
 
-    @GetMapping("/allDccList")
-    public ResponseEntity<List<Dcc>> getAllDccList(Principal principal) {
+@GetMapping("/allDccList")
+public ResponseEntity<Page<Dcc>> getAllDccListPaged(
+        Principal principal,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size) {
+    return new ResponseEntity<>(dccService.getAllDccListPaged(principal, page, size), HttpStatus.OK);
+}
 
-        return new ResponseEntity<>(dccService.getAllDccList(principal), HttpStatus.OK);
-    }
-
-    @GetMapping("/coordinatorListPaged")
-    public ResponseEntity<Page<Dcc>> getCoordinatorListPaged(
-            Principal principal,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<Dcc> pagedDccs = dccService.getPublicAndOwnDccListPaged(principal, page, size);
-        return new ResponseEntity<>(pagedDccs, HttpStatus.OK);
-    }
-//    @GetMapping("/dccs")
-//    public Page<Dcc> getDccs(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, Principal principal) {
-//        return dccService.getPublicAndOwnDccListPaged(principal, page, size);
-//    }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadDcc(
@@ -219,25 +222,9 @@ public class DccController {
         return ResponseEntity.accepted().body("Upload received, Time Stamp Request file is generated.");
     }
 
-    //    @PostMapping(value="/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    public ResponseEntity<String> uploadDcc(
-//            @RequestPart("file") MultipartFile file,
-//            @RequestPart("pid") String pid,
-//            Principal principal) throws Exception {
-//
-//        String username = principal.getName();
-//        User user = userRepository.findByUserName(username)
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//        byte[] xmlBytes = file.getBytes();
-//
-//        dccService.processAndSaveDcc(pid, xmlBytes, user);
-//
-//        return ResponseEntity.accepted().body("Upload received, Time Stamp Request file is generated.");
-//    }
     @GetMapping("/downloadXml")
-    public ResponseEntity<byte[]> downloadDcc(@RequestParam("pid") String pid, Principal principal) {
-        String base64Xml = dccService.getBase64EncodedXml(pid, principal);
+    public ResponseEntity<byte[]> downloadDcc(@RequestParam("pid") String pid) {
+        String base64Xml = dccService.getBase64EncodedXml(pid);
 
         if (base64Xml == null || base64Xml.isBlank()) {
             return ResponseEntity.noContent().build();
@@ -248,59 +235,16 @@ public class DccController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_XML);
         headers.setContentDisposition(ContentDisposition.builder("attachment")
-                .filename("dcc_" + pid + ".xml")
+                .filename( pid + ".xml")
                 .build());
 
         return new ResponseEntity<>(xmlBytes, headers, HttpStatus.OK);
     }
 
-    //    @PostMapping("/verify")
-//    public ResponseEntity<String> verifyTimestamp(
-//            @RequestParam("pid") String pid) {
-//
-//
-//
-//        Dcc dcc = dccRepository.findDccByPid(pid);
-//
-//        try {
-//            byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
-//            boolean valid = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile());
-//            return ResponseEntity.ok(valid ? "Timestamp is valid" : "Timestamp is invalid");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body("Error during verification: " + e.getMessage());
-//        }
-//    }
-//    @PostMapping("/verify")
-//    public ResponseEntity<String> verifyTimestamp(
-//            @RequestParam("pid") String pid,
-//            Principal principal) {
-//
-//        User user = userRepository.findByUserName(principal.getName())
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        Dcc dcc = dccRepository.findByPidAndUser(pid, user);
-//        if (dcc == null) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "DCC not found");
-//        }
-//
-//        try {
-//            byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
-//            boolean valid = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile(),principal);
-//            return ResponseEntity.ok(valid ? "Timestamp is valid" : "Timestamp is invalid");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body("Error during verification: " + e.getMessage());
-//        }
-//    }
-
     @PostMapping("/verify")
     public ResponseEntity<TimestampVerificationResult> verifyTimestamp(
-            @RequestParam("pid") String pid,
-            Principal principal) {
-
-        User user = userRepository.findByUserName(principal.getName())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        Dcc dcc = dccRepository.findByPidAndUser(pid, user)
+            @RequestParam("pid") String pid) {
+        Dcc dcc = dccRepository.findByPid(pid)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "DCC not found or no signed TSR"));
 
         if (dcc.getSignedTsrFile() == null) {
@@ -309,50 +253,13 @@ public class DccController {
 
         try {
             byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
-            TimestampVerificationResult result = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile(), principal);
+            TimestampVerificationResult result = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile());
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
         }
     }
 
-
-//    @PostMapping("/verify")
-//    public ResponseEntity<TimestampVerificationResult> verifyTimestamp(
-//            @RequestParam("pid") String pid,
-//            Principal principal) {
-//
-//        User user = userRepository.findByUserName(principal.getName())
-//                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-//
-//        Dcc dcc = dccRepository.findByPidAndUser(pid, user);
-//        if (dcc == null || dcc.getSignedTsrFile() == null) {
-//            return ResponseEntity.badRequest().build();
-//        }
-//
-//        try {
-//            byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
-//            TimestampVerificationResult result = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile(), principal);
-//            return ResponseEntity.ok(result);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).build();
-//        }
-//    }
-//    @PostMapping("/verify")
-//    public ResponseEntity<String> verifyTimestamp(@RequestParam("pid") String pid, Principal principal) {
-//        User user = userRepository.findByUserName(principal.getName()).orElseThrow(() -> new RuntimeException("User not found"));
-//        Dcc dcc = dccRepository.findByPidAndUser(pid, user);
-//        if (dcc == null) {
-//            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "DCC not found");
-//        }
-//        try {
-//            byte[] xmlBytes = Base64.getDecoder().decode(dcc.getXmlBase64());
-//            boolean valid = dccService.verifyTimestamp(xmlBytes, dcc.getSignedTsrFile(), principal);
-//            return ResponseEntity.ok(valid ? "Timestamp is valid" : "Timestamp is invalid");
-//        } catch (Exception e) {
-//            return ResponseEntity.status(500).body("Error during verification: " + e.getMessage());
-//        }
-//    }
 
     @Operation(summary = "Download TSR file for a DCC",
             description = "Downloads the timestamp response (.tsr) as a file")
@@ -362,24 +269,19 @@ public class DccController {
             @RequestParam("pid") String pid,
             Principal principal) {
 
-        // 1. Aktuellen User holen
         User user = userRepository.findByUserName(principal.getName())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        // 2. DCC anhand PID und User holen
         Optional<Dcc> dccOptional = dccRepository.findByPidAndUser(pid, user);
 
         Dcc dcc = dccOptional.orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "DCC not found or access denied")
         );
 
-        // 3. Datei holen und prüfen
         byte[] tsrBytes = dcc.getSignedTsrFile();
         if (tsrBytes == null || tsrBytes.length == 0) {
             throw new ResponseStatusException(HttpStatus.NO_CONTENT, "TSR file is missing");
         }
 
-        // 4. Datei als Download zurückgeben
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + pid + ".tsr\"")
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -409,50 +311,9 @@ public class DccController {
         }
     }
 
-//@GetMapping("/users")
-//public ResponseEntity<List<User>> getUserDccs(Authentication auth) {
-//    String name = auth.getName();
-//    // Optional mit Exception Handling
-//    User user = userRepository.findByUserName(name)
-//            .orElseThrow(() -> new RuntimeException("User not found"));
-//    if (!user.getRole().equalsIgnoreCase("ADMIN")) {
-//        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-//    }
-//    return new ResponseEntity<>(userRepository.findAll() ,HttpStatus.OK);
-//
-//}
-
-    //    @GetMapping("/admin")
-//    public ResponseEntity<List<Dcc>> getAllDccs(Authentication auth) {
-//        String email = auth.getName();
-//        User user = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
-//
-//        if (!user.getRole().equalsIgnoreCase("ADMIN")) {
-//            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-//        }
-//        List<Dcc> allDccs = dccRepository.findAll();
-//        return ResponseEntity.ok(allDccs);
-//    }
-//@GetMapping("/users")
-//public ResponseEntity<List<User>> getAllUsers() {
-//    try {
-//        List<User> users = userRepository.findAll();
-//        if (users.isEmpty()) {
-//            return new ResponseEntity<>(HttpStatus.NO_CONTENT); // Leere Antwort
-//        }
-//        return new ResponseEntity<>(users, HttpStatus.OK);
-//    } catch (Exception e) {
-//        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR); // Fehler
-//    }
-//}
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
-
-        List<User> users = userRepository.findAll();
-
         return new ResponseEntity<>(userRepository.findAll(), HttpStatus.OK);
-
     }
 
     @PostMapping("/login")
@@ -480,3 +341,4 @@ public class DccController {
     }
 
 }
+

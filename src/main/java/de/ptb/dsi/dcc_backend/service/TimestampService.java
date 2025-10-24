@@ -18,7 +18,7 @@ import java.security.MessageDigest;
 public class TimestampService {
 
     public byte[] createTimestampRequest(byte[] data) throws Exception {
-        // SHA-256 Hash
+
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hashedData = digest.digest(data);
 

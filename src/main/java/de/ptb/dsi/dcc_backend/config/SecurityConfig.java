@@ -6,11 +6,9 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -21,13 +19,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.util.List;
 
 
@@ -38,17 +32,15 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
 
-    // 1. PasswordEncoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 2. SecurityFilterChain – mit Authentifizierung + Autorisierung + CORS
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults()) // aktiviert corsConfigurationSource()
+                .cors(Customizer.withDefaults())
                 .csrf().disable()
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
@@ -59,15 +51,27 @@ public class SecurityConfig {
                         .requestMatchers("/api/d-dcc/login").permitAll()
                         .requestMatchers("/api/d-dcc/dccPidList").permitAll()
                         .requestMatchers("/api/d-dcc/dccPublicPidList").permitAll()
+
+                        .requestMatchers("/api/d-dcc/downloadXml", "/api/d-dcc/verify","/api/d-dcc/listAllDccPid").permitAll()
+                        .requestMatchers("/api/d-dcc/dcc/{pid}").permitAll()
                         .requestMatchers("/api/d-dcc/upload").authenticated()
-                        .requestMatchers("/api/d-dcc/downloadXml", "/api/d-dcc/verify", "/api/d-dcc/delete", "/api/d-dcc/coordinatorListPidAndPublic").hasAnyRole("COORDINATOR", "ADMIN")
-                        .requestMatchers("/api/d-dcc/publicAndCoordinatorDccList").hasRole("COORDINATOR")
-                        .requestMatchers("/api/d-dcc/listAllDccPid", "/api/d-dcc/allDccList").hasRole("ADMIN")
+                        .requestMatchers( "/api/d-dcc/delete", "/api/d-dcc/coordinatorListPidAndPublic").hasAnyRole("COORDINATOR", "ADMIN")
+                        .requestMatchers("/api/d-dcc/publicAndCoordinatorDccList").authenticated()
+                        .requestMatchers( "/api/d-dcc/allDccList", "/api/d-dcc/users/{id}","/api/d-dcc/edit/users/{id}").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
-
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                 .invalidSessionUrl("/login?error=session")
+                .maximumSessions(1) // Maximale Anzahl von Sessions
+                .expiredUrl("/login?expired=true")
+                .and()
+                .and()
+                .logout()
+                .invalidateHttpSession(true)  // Sicherstellen, dass die Session gelöscht wird
+                .clearAuthentication(true)    // Entfernt alle Authentifizierungsdaten
+                .logoutUrl("/api/d-dcc/logout") // Setzt die Logout-URL fest
+                .logoutSuccessUrl("/login?logout=true"); // Weiterleitung nach dem Logout
         return http.build();
     }
 
@@ -81,7 +85,6 @@ public class SecurityConfig {
                 .build();
     }
 
-    // 4. CORS-Konfiguration (zentral, wird automatisch durch .cors() verwendet)
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
@@ -100,7 +103,6 @@ public class SecurityConfig {
         return source;
     }
 
-    // 5. Swagger Auth (optional, aber oft sinnvoll)
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -111,98 +113,3 @@ public class SecurityConfig {
                                 .scheme("basic")));
     }
 }
-//    private final UserDetailsService userDetailsService;
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
-//
-//
-//@Bean
-//public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//    http
-//            .cors(Customizer.withDefaults())
-//            .csrf().disable()
-//            .authorizeHttpRequests(authz -> authz
-//                            .requestMatchers("/api/d-dcc/swagger-ui/**", "/api/d-dcc/v3/api-docs/**", "/api/d-dcc/swagger-resources/**").permitAll()// Swagger freigeben
-//                            .requestMatchers("/api/d-dcc/login").permitAll()
-//                            .requestMatchers("/api/d-dcc/dccPidList").permitAll()
-//                    .requestMatchers("/api/d-dcc/dccPublicPidList").permitAll()
-//                            .requestMatchers("/api/d-dcc/downloadXml").hasAnyRole("COORDINATOR","ADMIN")
-//                            .requestMatchers("/api/d-dcc/verify").hasAnyRole("COORDINATOR","ADMIN")
-//                            .requestMatchers("/api/d-dcc/delete").hasAnyRole("COORDINATOR","ADMIN")
-//                            .requestMatchers("/api/d-dcc/coordinatorListPidAndPublic").hasAnyRole("COORDINATOR","ADMIN")
-//                    .requestMatchers("/api/d-dcc/listAllDccPid").hasRole("ADMIN")
-////                            .requestMatchers("/api/d-dcc/coordinatorListPaged").authenticated()
-//                       //     .requestMatchers("/api/d-dcc/users").authenticated()
-//                    .requestMatchers("/api/d-dcc/publicAndCoordinatorDccList").hasRole("COORDINATOR")
-//                            .requestMatchers("/api/d-dcc/upload").authenticated()
-////                            .requestMatchers("/api/d-dcc/users").hasRole("ADMIN")
-//                            .requestMatchers("/api/d-dcc/allDccList").hasRole("ADMIN")
-////                    .requestMatchers("/api/d-dcc/coordinatorDccList").authenticated()
-//                            .anyRequest().authenticated()
-//            )
-//           // .formLogin(Customizer.withDefaults()) // Login-Formular aktiv
-//            .httpBasic(Customizer.withDefaults()) // Swagger mit Basic Auth möglich
-//            .sessionManagement()
-//            .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
-//
-//    return http.build();
-//
-//}
-//
-//    @Bean
-//    public OpenAPI customOpenAPI() {
-//        return new OpenAPI()
-//                .addSecurityItem(new SecurityRequirement().addList("basicAuth"))
-//                .components(new Components()
-//                        .addSecuritySchemes("basicAuth",
-//                                new SecurityScheme()
-//                                        .type(SecurityScheme.Type.HTTP)
-//                                        .scheme("basic")));
-//    }
-//
-//    @Bean
-//    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-//        return http.getSharedObject(AuthenticationManagerBuilder.class)
-//                .userDetailsService(userDetailsService)
-//                .passwordEncoder(passwordEncoder())
-//                .and()
-//                .build();
-//    }
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//        CorsConfiguration config = new CorsConfiguration();
-//        config.setAllowedOrigins(List.of("http://localhost:4200"));
-//        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-//        config.setAllowedHeaders(List.of("*"));
-//        config.setAllowCredentials(true);
-//        config.setMaxAge(3600L);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//        return source;
-//    }
-////    @Bean
-////    public RestTemplate restTemplate() {
-////        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-////
-////        // Proxy setzen
-////        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.example.com", 8085));
-////        requestFactory.setProxy(proxy);
-////
-////        // Timeouts setzen (Millisekunden)
-////        requestFactory.setConnectTimeout(15000);  // 15 Sekunden Verbindungsaufbau
-////        requestFactory.setReadTimeout(30000);     // 30 Sekunden auf Antwort warten
-////
-////        return new RestTemplate(requestFactory);
-////    }
-//
-//}
-////    requestMatchers("/api/d-dcc/**").hasRole("ADMIN")
-////
-////        .requestMatchers("/api/d-dcc/verify").hasRole("COORDINATOR")
-////        .requestMatchers("/api/d-dcc/upload").hasRole("COORDINATOR")
-////        .requestMatchers("/api/d-dcc/addDcc").hasRole("COORDINATOR")
-////        .requestMatchers("/api/d-dcc/coordinatorListPidAndPublic").hasRole("COORDINATOR")
-////        .requestMatchers("/api/d-dcc/swagger-ui/index.html").authenticated()
