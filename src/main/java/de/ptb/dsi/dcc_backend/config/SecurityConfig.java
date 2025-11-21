@@ -51,7 +51,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/d-dcc/login").permitAll()
                         .requestMatchers("/api/d-dcc/dccPidList").permitAll()
                         .requestMatchers("/api/d-dcc/dccPublicPidList").permitAll()
-
+                        .requestMatchers("/api/d-dcc/privateListPid").permitAll()
+                        .requestMatchers("/api/d-dcc/dccPublicPidList").permitAll()
                         .requestMatchers("/api/d-dcc/downloadXml", "/api/d-dcc/verify","/api/d-dcc/listAllDccPid").permitAll()
                         .requestMatchers("/api/d-dcc/dcc/{pid}").permitAll()
                         .requestMatchers("/api/d-dcc/upload").authenticated()
@@ -63,15 +64,15 @@ public class SecurityConfig {
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                  .invalidSessionUrl("/login?error=session")
-                .maximumSessions(1) // Maximale Anzahl von Sessions
+                .maximumSessions(1)
                 .expiredUrl("/login?expired=true")
                 .and()
                 .and()
                 .logout()
-                .invalidateHttpSession(true)  // Sicherstellen, dass die Session gelöscht wird
-                .clearAuthentication(true)    // Entfernt alle Authentifizierungsdaten
-                .logoutUrl("/api/d-dcc/logout") // Setzt die Logout-URL fest
-                .logoutSuccessUrl("/login?logout=true"); // Weiterleitung nach dem Logout
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .logoutUrl("/api/d-dcc/logout")
+                .logoutSuccessUrl("/login?logout=true");
         return http.build();
     }
 
@@ -95,9 +96,8 @@ public class SecurityConfig {
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true); // Achtung: Nur setzen, wenn kein "*" in allowedOrigins!
+        config.setAllowCredentials(true);
         config.setMaxAge(3600L);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

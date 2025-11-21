@@ -137,7 +137,6 @@ public class DccController {
     }
 
     @GetMapping("/privateListPid")
-    @Hidden
     public ResponseEntity<List<String>> getPrivateListPid() {
 
         return new ResponseEntity<>(dccService.getPrivateListPid(), HttpStatus.OK);

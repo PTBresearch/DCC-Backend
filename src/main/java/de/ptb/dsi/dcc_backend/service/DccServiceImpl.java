@@ -130,8 +130,8 @@ public class DccServiceImpl implements DccService {
             List<Dcc> dccList = dccRepository.findAll();
 
             return dccList.stream()
-                    .map(dcc -> "http://localhost:8085/api/d-dcc/dcc/" + dcc.getPid())
-//                    .map(dcc -> "https://d-si.ptb.de/api/d-dcc/dcc/" + dcc.getPid())
+//                    .map(dcc -> "http://localhost:8085/api/d-dcc/dcc/" + dcc.getPid())
+                    .map(dcc -> "https://d-si.ptb.de/api/d-dcc/dcc/" + dcc.getPid())
 
                     .collect(Collectors.toList());
 
@@ -142,16 +142,16 @@ public class DccServiceImpl implements DccService {
         List<Dcc> publicDccList = dccRepository.findByStatus("public");
 
         List<String> publicPidList = publicDccList.stream()
-                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-//                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
+//                                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid ->"https://d-si.ptb.de/api/d-dcc/dcc/" +  pid.getPid()).collect(Collectors.toList());
         return publicPidList;
     }
     @Override
     public List<String> getUrlListDccPid() {
         List<Dcc> dccList = dccRepository.findAll();
         List<String> pidList = dccList.stream()
-//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
         return pidList;
     }
@@ -168,8 +168,8 @@ public class DccServiceImpl implements DccService {
         List<Dcc> coordinatorDccList = dccRepository.findDccsByUser_UserName(principal.getName());
 
         return coordinatorDccList.stream()
-//                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
-                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+                .map(pid -> "https://d-si.ptb.de/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
+//                  .map(pid -> "http://localhost:8085/api/d-dcc/dcc/" + pid.getPid()).collect(Collectors.toList());
 
     }
 
@@ -423,8 +423,8 @@ public boolean deleteByIdAndUserOrAdmin(String id, User user) {
 
         Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(customProperties.getProxyHost(), customProperties.getProxyPort()));
         URL url = new URL("https://freetsa.org/tsr");
-//        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection(proxy);
+//        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/timestamp-query");
         conn.setRequestProperty("Content-Length", String.valueOf(tsqBytes.length));
